@@ -1,0 +1,166 @@
+---
+title: "Simulation Report: Community Connectedness"
+author: "Scenarios to Simulations Team"
+date: "November 7, 2016"
+output: 
+  pdf_document:
+    keep_tex: yes
+graphics: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,warning = F, message = F)
+```
+
+
+```{r fig.height= 1, fig.width=1,fig.align='center'}
+knitr::include_graphics("CC_ScenarioQuad_final.jpg")
+```
+
+### Scenario Simulation Overview
+* Forest to Development:
+    - COPING WITH CLIMATE CHANGE. Move away from coast and move out of flood zones.
+    - PLANNED URBAN CENTERS RESULT IN DENSIFICATION.
+    - PEOPLE ARE ABLE TO LIVE AND WORK WITHIN WALKING DISTANCE.  COMMUNITY FOCUSED LIFESTYLE.
+    - SMART GROWTH, GOOD URBAN PLANNING
+* Forest to Agriculture:
+    - NEW FARMS ON OUTSKIRTS OF TOWN
+* Forest to Conservation:
+    - FOCUSED ON CLEAN WATER, FOREST HEALTH, AND FLOOD CONTROL.
+    - LARGER MULTINATIONALS DIVEST LAND TO LOCAL GOVERNMENTS
+* Agriculture to Development:
+    - SMART GROWTH, GOOD PLANNING.  (Decreased probability of new development on prime agricultural soils).
+```{r results='asis',cache = T, cache.lazy= FALSE}
+library(pander);library(raster)
+initialLCmap <- raster("Y:\\Plisinski\\Dinamica_Runs\\SEQUENCE_RT\\data\\Landscapes_for_table\\Initial_Landscape.img")
+finalLCmap   <- raster("Y:\\Plisinski\\Dinamica_Runs\\SEQUENCE_CC\\data\\Landscapes_for_table\\Landscape05.img")
+if(file.exists("src\\TransitionTable.Rdata")){
+  load("src\\TransitionTable.Rdata")
+  pandoc.table(outdf2,keep.line.breaks = T,style ="multiline",split.tables = Inf,split.cells = 10, caption = "2010 to 2060 Land Cover Transition Matrix (ha)")
+}else{
+  s <- stack(initialLCmap,finalLCmap)
+  rasdf <- as.data.frame(s)
+  # f <- factor(rasdf$OLO_NB_FULL10)
+  # levels(f) <- c(rep("Low-Density Development",3),
+  #                         rep("High-Density Development",3),"Non-Conserved Forest",rep("Conserved Forest",7),"Agriculture",
+  #                         rep("Conserved Agriculture",2),rep("Other",3))
+  # f2 <- factor(rasdf$Landscape05)
+  # levels(f2) <- c(rep("Low-Density Development",3),
+  #                         rep("High-Density Development",3),"Non-Conserved Forest",rep("Conserved Forest",7),"Agriculture",
+  #                         rep("Conserved Agriculture",2),rep("Other",3))
+  # 
+  outdf <- table(rasdf[,2],rasdf[,1])
+  outdf <- outdf[1:7,1:7]
+  outdf2 <- round((outdf * 900) / 10000 )
+  colnames(outdf2) <- c("High-Dens.\nDev.","Low-Dens.\nDev.","Forest","Cons.Forest","Agriculture","Cons.Agriculture","Other")
+  rownames(outdf2) <- c("High-Dens.\nDev.","Low-Dens.\nDev.","Forest","Cons.Forest","Agriculture","Cons.Agriculture","Other")
+  save(outdf2,file = "Y:\\Morreale\\Dropbox\\Work\\Docs\\Scenarios_Report\\CC\\src\\TransitionTable.Rdata")
+  pandoc.table(outdf2,keep.line.breaks = T,style ="multiline",split.tables = Inf,split.cells = 10, caption = "2010 to 2060 Land Cover Transition Matrix (ha x 10000)")
+}
+``` 
+
+```{r out.width='.49\\linewidth', fig.width=5, fig.height=5,fig.show='hold',fig.align='center'}
+library(ggplot2);library(rasterVis)
+r1 <- raster("Y:\\Plisinski\\Dinamica_Runs\\SEQUENCE_CC\\data\\Landscapes_Simplified/Landscape01.img")
+r2 <- raster("Y:\\Plisinski\\Dinamica_Runs\\SEQUENCE_CC\\data\\Landscapes_Simplified/Landscape05.img")
+cols <- c('#e41a1c','#4daf4a',"#e6ab02",'#377eb8')
+p1 <- gplot(r1, maxpixels = 500000) +
+  geom_tile(aes(fill = factor(value))) +
+  scale_fill_manual(name = "",values = cols,labels = c("Development","Forest","Agriculture","Other")) +
+  xlab("") + ylab("") +
+  ggtitle("Landcover 2010") +
+  theme(
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_rect(fill = NA,colour = "black"),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  axis.text = element_blank())
+
+p2 <- gplot(r2, maxpixels = 500000) +
+  geom_tile(aes(fill = factor(value))) +
+  scale_fill_manual(name = "",values = cols,labels = c("Development","Forest","Agriculture","Other")) +
+  xlab("") + ylab("") +
+  ggtitle("Landcover 2060") +
+  theme(
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_rect(fill = NA,colour = "black"),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  axis.text = element_blank())
+p1
+p2
+
+```
+
+```{r fig.width=4, fig.height=11,fig.show='hold',fig.align='center'}
+library(foreign);library(plyr);library(reshape2);library(ggplot2);library(foreign)
+wd <- "Y:/Plisinski/Dinamica_Runs/SEQUENCE_CC/data/Landscape_Histograms/"
+tab <- paste0(wd,list.files(wd,".dbf$"))
+tab <- tab[grep("Landscape0[1-4]",tab)]
+tabl <- ldply(lapply(tab,read.dbf))
+tabl$Year <- c(rep(1,4),rep(2,4),rep(3,4),rep(4,4))#rep(5,4))
+tabl$NE <- rowSums(tabl[2:7])
+m_DF <- melt(tabl,id.vars = c("Year","LABEL"))
+m_DF <- ddply(m_DF,.(Year,variable),summarize,LABEL = LABEL,value = value,perc = value / sum(value))
+cols <- c('#e41a1c','#4daf4a',"#e6ab02",'#377eb8')
+#windows(8.5,11)
+p1 <- ggplot(m_DF,aes(Year,perc * 100,group = LABEL,colour = LABEL)) + 
+  geom_line(size = 1) + ylab("Percent of State") + ylim(0,100) +
+  xlab("Timestep")  + 
+  ggtitle("Landcover Change") +
+  scale_colour_manual(name = "",values = cols,labels = c("Development","Forest","Agriculture","Other"))
+p1 + facet_grid(variable~.)
+
+
+```
+
+
+
+
+```{r results='asis'}
+wd <- "Y:\\Morreale/Dropbox/Work/Docs/Scenarios_Report/CC/data/"
+library(pander);library(plyr)
+get.PS <- function(path){
+  load(path)
+  if(grepl("NEP*",path)){
+    tempdf <- data.frame(Mean.Forest.Patch.ha = mean(c(ps3[["n.cell"]] * 900))/10000 ,SD.Forest.Patch.ha = round(sd(c(ps3[["n.cell"]] * 900))/10000,1),
+                     Forest.Core.Area.ha_x_1000 = round(sum(c(ps3[["core.area"]] * 900))/10000 /10000,1),Perim.Area.Ratio = mean(c(ps3[["perim.area.ratio"]])))
+  }else if(grepl("For*",path)){
+    tempdf <- data.frame(Mean.Forest.Patch.ha = mean(c(ps[["n.cell"]] * 900))/10000 ,SD.Forest.Patch.ha = round(sd(c(ps[["n.cell"]] * 900))/10000,1),
+                     Forest.Core.Area.ha_x_1000 = round(sum(c(ps[["core.area"]] * 900))/10000 /10000,1),Perim.Area.Ratio = mean(c(ps[["perim.area.ratio"]])))
+  return(tempdf)
+  }else if(grepl("Dev*",path)){
+    tempdf <- data.frame(Mean.Forest.Patch.ha = mean(c(ps2[["n.cell"]] * 900))/10000 ,SD.Forest.Patch.ha = round(sd(c(ps2[["n.cell"]] * 900))/10000,1),
+                     Forest.Core.Area.ha_x_1000 = round(sum(c(ps2[["core.area"]] * 900))/10000 /10000,1),Perim.Area.Ratio =mean(c(ps2[["perim.area.ratio"]])))
+  return(tempdf)
+  }
+}
+f <- paste0(wd,list.files(wd,"Rdata*"))
+
+Table2 <- as.data.frame(sapply(f,get.PS))
+#load("Y:\\Morreale/Dropbox/Work/Docs/Scenarios_Report/data/PatchStats2060.Rdata")
+#temp <- data.frame(Mean.Forest.Patch.ha = mean(c(ps2060$n.cell * 900)) / 10000 ,SD.Forest.Patch.ha = round(sd(c(ps2060$n.cell * 900)) / 10000,1),
+#                     Forest.Core.Areaha_x_1000 = round(sum(c(ps2060$core.area * 900))/10000 /10000,1),Perim.Area.Ratio = mean(c(ps2060$perim.area.ratio)))
+#Table2 <- rbind(Table2, temp)
+colnames(Table2) <- paste0(c(rep("Dev",7),rep("For",7)),c("NE","CT","MA","ME","NH","RI","VT"))
+Table2 <- as.data.frame(t(Table2))
+
+pandoc.table(Table2,keep.line.breaks = T,style ="multiline",split.tables = Inf,split.cells = 10, caption = "Patch Statistics for 2060")
+
+```
+
+
+```{r results = 'asis'}
+library(pander)
+wd <- "D:\\Plisinski\\Dinamica_Runs\\SEQUENCE_CC\\data\\Analysis_Histograms\\"
+dbfs <- paste0(wd,list.files(wd,".dbf$"))
+dbfl <- lapply(dbfs,read.dbf)
+df <- data.frame(Percent= 100 *sapply(dbfl,function(x) { x[3,2] / (x[3,2] + x[2,2])}))
+rownames(df) <- c("Conservation.Important.Watersheds","Conservation.StateWildlifePlans","Conservation.Wetlands","Development.Important.Watersheds",
+                  "Development.StateWildlifePlans","Development.Wetlands")
+pandoc.table(df ,keep.line.breaks = T,style ="multiline",split.tables = Inf,split.cells = 10, caption = "Scenario Impact")
+
+```
+
