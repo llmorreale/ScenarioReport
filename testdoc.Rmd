@@ -1,0 +1,23 @@
+---
+output: 
+  pdf_document:
+    keep_tex: no
+params:
+  report_name: "Simulation Report"
+  scen_overview: "Overview Text"
+title: "`r params$report_name`"
+author: "Scenarios to Simulations Team"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+---
+
+
+### Scenario Simulation Overview
+```{r child = params$scen_overview}
+```
+
+
+
+
+
+##DID IT WORK?##
