@@ -1,12 +1,16 @@
 ---
-title: "Simulation Report: Community Connectedness"
-author: "Scenarios to Simulations Team"
-date: "November 7, 2016"
 output: 
   pdf_document:
-    keep_tex: yes
+    keep_tex: no
+params:
+  report_name: "Simulation Report"
+  scen_overview: "Overview Text"
+title: "`r params$report_name`"
+author: "Scenarios to Simulations Team"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
 graphics: yes
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,warning = F, message = F)
@@ -18,18 +22,10 @@ knitr::include_graphics("CC_ScenarioQuad_final.jpg")
 ```
 
 ### Scenario Simulation Overview
-* Forest to Development:
-    - COPING WITH CLIMATE CHANGE. Move away from coast and move out of flood zones.
-    - PLANNED URBAN CENTERS RESULT IN DENSIFICATION.
-    - PEOPLE ARE ABLE TO LIVE AND WORK WITHIN WALKING DISTANCE.  COMMUNITY FOCUSED LIFESTYLE.
-    - SMART GROWTH, GOOD URBAN PLANNING
-* Forest to Agriculture:
-    - NEW FARMS ON OUTSKIRTS OF TOWN
-* Forest to Conservation:
-    - FOCUSED ON CLEAN WATER, FOREST HEALTH, AND FLOOD CONTROL.
-    - LARGER MULTINATIONALS DIVEST LAND TO LOCAL GOVERNMENTS
-* Agriculture to Development:
-    - SMART GROWTH, GOOD PLANNING.  (Decreased probability of new development on prime agricultural soils).
+```{r child = params$scen_overview}
+```
+
+
 ```{r results='asis',cache = T, cache.lazy= FALSE}
 library(pander);library(raster)
 initialLCmap <- raster("Y:\\Plisinski\\Dinamica_Runs\\SEQUENCE_RT\\data\\Landscapes_for_table\\Initial_Landscape.img")
@@ -39,16 +35,8 @@ if(file.exists("src\\TransitionTable.Rdata")){
   pandoc.table(outdf2,keep.line.breaks = T,style ="multiline",split.tables = Inf,split.cells = 10, caption = "2010 to 2060 Land Cover Transition Matrix (ha)")
 }else{
   s <- stack(initialLCmap,finalLCmap)
+  
   rasdf <- as.data.frame(s)
-  # f <- factor(rasdf$OLO_NB_FULL10)
-  # levels(f) <- c(rep("Low-Density Development",3),
-  #                         rep("High-Density Development",3),"Non-Conserved Forest",rep("Conserved Forest",7),"Agriculture",
-  #                         rep("Conserved Agriculture",2),rep("Other",3))
-  # f2 <- factor(rasdf$Landscape05)
-  # levels(f2) <- c(rep("Low-Density Development",3),
-  #                         rep("High-Density Development",3),"Non-Conserved Forest",rep("Conserved Forest",7),"Agriculture",
-  #                         rep("Conserved Agriculture",2),rep("Other",3))
-  # 
   outdf <- table(rasdf[,2],rasdf[,1])
   outdf <- outdf[1:7,1:7]
   outdf2 <- round((outdf * 900) / 10000 )
